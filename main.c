@@ -12,7 +12,7 @@
 #define FONTS_SIZE 80
 
 //const char *path = "seven.ch8";
-const char *path = "SCTEST";
+const char *path = "test_opcode.ch8";
 //const char *path = "BCD_display.txt";
 
 uint8_t memory[MEMORY_SIZE];
@@ -155,6 +155,8 @@ void decodeNextInstruction()
     uint8_t x = (instruction >> 8) & 0x000F;
     uint8_t y = (instruction >> 4) & 0x000F;
 
+    PC += 2;
+
     switch (instruction & 0xF000)
     {
     case 0x0000:
@@ -162,7 +164,6 @@ void decodeNextInstruction()
         {
         case 0x00E0:
             clearScreen();
-            PC += 2;
             break;
 
         case 0x00EE:
@@ -188,22 +189,14 @@ void decodeNextInstruction()
         break;
 
     case 0x3000:
-        if (registers[x] == instruction & 0x00FF)
-        {
-            PC += 4;
-        }
-        else
+        if (registers[x] == (instruction & 0x00FF))
         {
             PC += 2;
         }
         break;
 
     case 0x4000:
-        if (registers[x] != instruction & 0x00FF)
-        {
-            PC += 4;
-        }
-        else
+        if (registers[x] != (instruction & 0x00FF))
         {
             PC += 2;
         }
@@ -212,10 +205,6 @@ void decodeNextInstruction()
     case 0x5000:
         if (registers[x] == registers[y])
         {
-            PC += 4;
-        }
-        else
-        {
             PC += 2;
         }
         break;
@@ -223,12 +212,10 @@ void decodeNextInstruction()
     case 0x6000:
         registers[x] = instruction & 0x00FF;
         printf("Number: %.2x into register: %d\n", instruction & 0x00FF, x);
-        PC += 2;
         break;
 
     case 0x7000:
         registers[x] += instruction & 0x00FF;
-        PC += 2;
         break;
 
     case 0x8000:
@@ -236,22 +223,18 @@ void decodeNextInstruction()
         {
         case 0x0000:
             registers[x] = registers[y];
-            PC += 2;
             break;
 
         case 0x0001:
             registers[x] = registers[x] | registers[y];
-            PC += 2;
             break;
 
         case 0x0002:
             registers[x] = registers[x] & registers[y];
-            PC += 2;
             break;
 
         case 0x0003:
             registers[x] = registers[x] ^ registers[y];
-            PC += 2;
             break;
 
         case 0x0004:
@@ -264,7 +247,6 @@ void decodeNextInstruction()
             {
                 registers[VF] = 0;
             }
-            PC += 2;
             break;
 
         case 0x0005:
@@ -277,13 +259,11 @@ void decodeNextInstruction()
             {
                 registers[VF] = 0;
             }
-            PC += 2;
             break;
 
         case 0x0006:
             registers[VF] = registers[x] & 0x01;
             registers[x] /= 2;
-            PC += 2;
             break;
 
         case 0x0007:
@@ -296,13 +276,11 @@ void decodeNextInstruction()
             {
                 registers[VF] = 0;
             }
-            PC += 2;
             break;
 
         case 0x000E:
             registers[VF] = registers[x] & 0x01;
             registers[x] *= 2;
-            PC += 2;
             break;
 
         default:
@@ -316,10 +294,6 @@ void decodeNextInstruction()
         case 0x0000:
             if (registers[y] != registers[x])
             {
-                PC += 4;
-            }
-            else
-            {
                 PC += 2;
             }
             break;
@@ -331,7 +305,6 @@ void decodeNextInstruction()
 
     case 0xA000:
         I = instruction & 0x0FFF;
-        PC += 2;
         break;
 
     case 0xB000:
@@ -343,7 +316,6 @@ void decodeNextInstruction()
         uint32_t randomNumber = rand() % 256;
         registers[x] = randomNumber & (instruction & 0x00FF);
         printf("Random number generated: %.1x\n", randomNumber & (instruction & 0x00FF));
-        PC += 2;
         break;
 
     case 0xD000:
@@ -352,7 +324,7 @@ void decodeNextInstruction()
         printf("Coordinates for printing, x = %d, y = %d \n", registers[x], registers[y]);
         for (int i = 0; i < numberBytes; i++)
         {
-            for (int j = 0; j < 4; j++)
+            for (int j = 0; j < 8; j++)
             {
                 if (memory[I + i] & (0x80 >> j))
                 {
@@ -365,7 +337,6 @@ void decodeNextInstruction()
                 }
             }
         }
-        PC += 2;
         break;
 
     case 0xE000:
@@ -380,21 +351,18 @@ void decodeNextInstruction()
 
             case 0x0029:
                 I = START_OF_FONT + registers[x] * 5;
-                PC += 2;
                 break;
 
             case 0x0033:
                 memory[I] = registers[x] / 100;
                 memory[I+1] = (registers[x] % 100) / 10;
                 memory[I+2] = registers[x] % 10;
-                PC += 2;
                 break;
 
             case 0x0065:
                 for(int i=0; i<=x; i++){
                     registers[i] = memory[I+i];
                 }
-                PC += 2;
                 break;
 
             default:
@@ -442,8 +410,46 @@ int main()
     decodeNextInstruction();
     decodeNextInstruction();
     decodeNextInstruction();
-
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
     
+  
 
     printScreen();
 
