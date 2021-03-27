@@ -11,7 +11,9 @@
 
 #define FONTS_SIZE 80
 
-const char *path = "seven.ch8";
+//const char *path = "seven.ch8";
+const char *path = "SCTEST";
+//const char *path = "BCD_display.txt";
 
 uint8_t memory[MEMORY_SIZE];
 
@@ -164,8 +166,10 @@ void decodeNextInstruction()
             break;
 
         case 0x00EE:
-            PC = stack[SP];
-            SP--;
+            PC = stack[--SP];
+            if(SP<0){
+                printf("Erreur, SP is negatif\n");
+            }
             break;
 
         default:
@@ -175,10 +179,11 @@ void decodeNextInstruction()
 
     case 0x1000:
         PC = instruction & 0x0FFF;
+        printf("Jump to %x\n", instruction & 0x0FFF);
         break;
 
     case 0x2000:
-        stack[++SP] = PC;
+        stack[SP++] = PC;
         PC = instruction & 0x0FFF;
         break;
 
@@ -217,6 +222,7 @@ void decodeNextInstruction()
 
     case 0x6000:
         registers[x] = instruction & 0x00FF;
+        printf("Number: %.2x into register: %d\n", instruction & 0x00FF, x);
         PC += 2;
         break;
 
@@ -300,7 +306,7 @@ void decodeNextInstruction()
             break;
 
         default:
-            printf("Instruction not handled: 0x%.4x\n");
+            printf("0x8000 Instruction not handled: 0x%.4x\n");
         }
         break;
 
@@ -319,7 +325,7 @@ void decodeNextInstruction()
             break;
 
         default:
-            printf("Instruction not handled: 0x%.4x\n");
+            printf("0x9000 Instruction not handled: 0x%.4x\n");
         }
         break;
 
@@ -336,37 +342,34 @@ void decodeNextInstruction()
         srand(time(NULL));
         uint32_t randomNumber = rand() % 256;
         registers[x] = randomNumber & (instruction & 0x00FF);
+        printf("Random number generated: %.1x\n", randomNumber & (instruction & 0x00FF));
         PC += 2;
         break;
 
     case 0xD000:
         registers[VF] = 0;
         int numberBytes = instruction & 0x000F;
-        printf("Number bytes: %d\n", numberBytes);
-        printf("I: %x\n", I);
+        printf("Coordinates for printing, x = %d, y = %d \n", registers[x], registers[y]);
         for (int i = 0; i < numberBytes; i++)
         {
-            printf("%x\n", memory[I + i]);
             for (int j = 0; j < 4; j++)
             {
                 if (memory[I + i] & (0x80 >> j))
                 {
-                    printf("1 ", I);
-                    if (screen[y][x + j] == 1)
+                    if (screen[(registers[y] + i) % SCREEN_HEIGHT][(registers[x] + j) % SCREEN_WIDTH] == 1)
                     {
                         registers[VF] = 1;
                         printf("Collision\n", I);
                     }
-                    screen[y + i][x + j] ^= 1;
+                    screen[registers[y] + i][registers[x] + j] ^= 1;
                 }
-                printf("\n", I);
             }
         }
         PC += 2;
         break;
 
     case 0xE000:
-        printf("Instruction not handled: 0x%.4x\n");
+        printf("0xE000 Instruction not handled: 0x%.4x\n");
         break;
 
     case 0xF000:
@@ -380,8 +383,22 @@ void decodeNextInstruction()
                 PC += 2;
                 break;
 
+            case 0x0033:
+                memory[I] = registers[x] / 100;
+                memory[I+1] = (registers[x] % 100) / 10;
+                memory[I+2] = registers[x] % 10;
+                PC += 2;
+                break;
+
+            case 0x0065:
+                for(int i=0; i<=x; i++){
+                    registers[i] = memory[I+i];
+                }
+                PC += 2;
+                break;
+
             default:
-            printf("Instruction not handled: 0x%.4x\n");
+            printf("0xF000 Instruction not handled: 0x%.4x\n");
         }
         break;
 
@@ -399,24 +416,39 @@ int main()
     //printScreen();
     printRAM(START_OF_PROGRAM, numberBytes);
 
-    printScreen();
-
-    while(!stop){
+    /*while(!stop){
         decodeNextInstruction();
-    }
+    }*/
+
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+    decodeNextInstruction();
+
+    
 
     printScreen();
 
-    printRAM(START_OF_FONT, 5*10);
+    //printRAM(START_OF_PROGRAM, numberBytes);
 
     return 0;
 }
 
-/*
-00e0 	clear the screen
-661e 	put the hex number 1e into register 6 ... the X screen coordinate is now 30 decimal
-670a 	put the hex number 0a into register 7 ... the Y screen coordinate is now 10 decimal
-6807 	put the hex number 7 into register 8 ... this is the number we want to display
-f829 	point the index register at the graphic representing the number in register 8
-d675 	display 5 graphic lines (i.e. the 7 sprite) at the location stored in registers 6 and 7
-f000*/
