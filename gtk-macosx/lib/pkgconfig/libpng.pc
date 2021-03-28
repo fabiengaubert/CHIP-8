@@ -1,0 +1,11 @@
+prefix=/root/gtk-macosx
+exec_prefix=${prefix}
+libdir=${prefix}/lib
+includedir=${prefix}/include/libpng14
+
+Name: libpng
+Description: Loads and saves PNG files
+Version: 1.4.8
+Libs: -L${libdir} -lpng14
+Libs.private: -lz 
+Cflags: -I${includedir}

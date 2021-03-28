@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#include <gtk/gtk.h>
+#include <cairo.h>
 
 #define MEMORY_SIZE 4096
 #define START_OF_PROGRAM 0x200
@@ -11,9 +13,13 @@
 
 #define FONTS_SIZE 80
 
+#define SQUARE_SIZE 18
+
+
 //const char *path = "seven.ch8";
-const char *path = "test_opcode.ch8";
+//const char *path = "test_opcode.ch8";
 //const char *path = "BCD_display.txt";
+const char *path = "spaceInvaders.ch8";
 
 uint8_t memory[MEMORY_SIZE];
 
@@ -71,6 +77,9 @@ uint8_t SP = 0;
 
 uint8_t stop = 0;
 
+GtkWidget* window;
+GtkWidget *darea;
+
 void printScreen()
 {
     printf("\n");
@@ -86,6 +95,7 @@ void printScreen()
             {
                 printf(".");
             }
+            printf(" ");
         }
         printf("\n");
     }
@@ -121,7 +131,7 @@ int loadFile(const char *path)
         return 0;
     }
     size_t numberBytesRead = fread((uint8_t *)memory + START_OF_PROGRAM, sizeof(uint8_t), MEMORY_SIZE - START_OF_PROGRAM, fp);
-    printf("%d bytes are loaded in memory\n", numberBytesRead);
+    printf("%zu bytes are loaded in memory\n", numberBytesRead);
     fclose(fp);
     return numberBytesRead;
 }
@@ -284,7 +294,7 @@ void decodeNextInstruction()
             break;
 
         default:
-            printf("0x8000 Instruction not handled: 0x%.4x\n");
+            printf("0x8000 Instruction not handled: 0x%.4x\n", instruction);
         }
         break;
 
@@ -299,7 +309,7 @@ void decodeNextInstruction()
             break;
 
         default:
-            printf("0x9000 Instruction not handled: 0x%.4x\n");
+            printf("0x9000 Instruction not handled: 0x%.4x\n", instruction);
         }
         break;
 
@@ -331,7 +341,7 @@ void decodeNextInstruction()
                     if (screen[(registers[y] + i) % SCREEN_HEIGHT][(registers[x] + j) % SCREEN_WIDTH] == 1)
                     {
                         registers[VF] = 1;
-                        printf("Collision\n", I);
+                        printf("Collision\n");
                     }
                     screen[registers[y] + i][registers[x] + j] ^= 1;
                 }
@@ -340,13 +350,25 @@ void decodeNextInstruction()
         break;
 
     case 0xE000:
-        printf("0xE000 Instruction not handled: 0x%.4x\n");
+        switch(instruction & 0x00FF){
+            case 0x00A1:
+                PC+=2;
+                printf("Instruction to implement: 0x%.4x\n", instruction);
+            break;
+
+            default:
+            printf("0xE000 Instruction not handled: 0x%.4x\n", instruction);
+        }
         break;
 
     case 0xF000:
         switch(instruction & 0x00FF){
             case 0x0000:
                 stop = 1;
+                break;
+
+            case 0x001E:
+                I = I + registers[x];
                 break;
 
             case 0x0029:
@@ -359,6 +381,12 @@ void decodeNextInstruction()
                 memory[I+2] = registers[x] % 10;
                 break;
 
+            case 0x0055:
+                for(int i=0; i<=x; i++){
+                    memory[I+i] = registers[i];
+                }
+                break;
+            
             case 0x0065:
                 for(int i=0; i<=x; i++){
                     registers[i] = memory[I+i];
@@ -366,7 +394,7 @@ void decodeNextInstruction()
                 break;
 
             default:
-            printf("0xF000 Instruction not handled: 0x%.4x\n");
+            printf("0xF000 Instruction not handled: 0x%.4x\n", instruction);
         }
         break;
 
@@ -375,79 +403,51 @@ void decodeNextInstruction()
     }
 }
 
-int main()
+static void draw(cairo_t *cr){
+    int width, height;
+    //static size for now
+    //gtk_window_get_size(GTK_WINDOW(window), &width, &height);
+    cairo_set_source_rgb(cr, 0.5, 0.5, 1);
+    cairo_rectangle (cr, 0, 0,SQUARE_SIZE,SQUARE_SIZE);
+    cairo_fill(cr);
+}
+
+static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr, gpointer user_data)
+{
+  draw(cr);
+  return FALSE;
+}
+
+// $  gcc `pkg-config --cflags gtk+-3.0` -o main main.c `pkg-config --libs gtk+-3.0`
+int main(int argc, char** argv)
 {
     init();
     int numberBytes = loadFile(path);
     loadFonts();
 
-    //printScreen();
-    printRAM(START_OF_PROGRAM, numberBytes);
+    gtk_init(&argc, &argv);
+    window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+
+    gtk_window_set_title(GTK_WINDOW(window), "Chipster2D");
+    gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
+    gtk_window_set_default_size(GTK_WINDOW(window), SCREEN_WIDTH * SQUARE_SIZE, SCREEN_HEIGHT * SQUARE_SIZE); 
+
+    darea = gtk_drawing_area_new();
+    gtk_container_add(GTK_CONTAINER(window), darea);
+
+    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+    g_signal_connect(G_OBJECT(darea), "draw", G_CALLBACK(on_draw_event), NULL);
+
+    gtk_widget_show_all(window);
+    gtk_main();
 
     /*while(!stop){
         decodeNextInstruction();
     }*/
 
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
-    decodeNextInstruction();
+    for(int i = 0; i < 205; i++){
+        decodeNextInstruction();
+    }
     
   
 
