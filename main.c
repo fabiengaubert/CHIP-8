@@ -13,13 +13,16 @@
 
 #define FONTS_SIZE 80
 
+#define NUMBER_KEYS 16
+
 #define FPS 60
 
 
 //const char *path = "seven.ch8";
 //const char *path = "test_opcode.ch8";
 //const char *path = "BCD_display.txt";
-const char *path = "spaceInvaders.ch8";
+//const char *path = "spaceInvaders.ch8";
+const char *path = "c8games/INVADERS";
 
 uint8_t memory[MEMORY_SIZE];
 
@@ -82,6 +85,60 @@ GtkWidget *darea;
 
 int windowWidth, windowHeight;
 int squareSize = 20;
+
+uint16_t keyPressed = 0;
+
+uint8_t keyMappingQwerty[NUMBER_KEYS] =
+{
+    GDK_KEY_x,
+    GDK_KEY_1,
+    GDK_KEY_2,
+    GDK_KEY_3,
+    GDK_KEY_q,
+    GDK_KEY_w,
+    GDK_KEY_e,
+    GDK_KEY_a,
+    GDK_KEY_s,
+    GDK_KEY_d,
+    GDK_KEY_z,
+    GDK_KEY_c,
+    GDK_KEY_4,
+    GDK_KEY_r,
+    GDK_KEY_f,
+    GDK_KEY_v
+};
+
+int keyMappingAzertyMac[NUMBER_KEYS] =
+{
+    GDK_KEY_x,
+    GDK_KEY_ampersand,
+    GDK_KEY_eacute,
+    GDK_KEY_quotedbl,
+    GDK_KEY_a,
+    GDK_KEY_z,
+    GDK_KEY_e,
+    GDK_KEY_q,
+    GDK_KEY_s,
+    GDK_KEY_d,
+    GDK_KEY_w,
+    GDK_KEY_c,
+    GDK_KEY_apostrophe,
+    GDK_KEY_r,
+    GDK_KEY_f,
+    GDK_KEY_v
+};
+/*
+Keypad                   Qwerty                 Azerty
++-+-+-+-+                +-+-+-+-+              +-+-+-+-+
+|1|2|3|C|                |1|2|3|4|              |GDK_KEY_ampersand|GDK_KEY_eacute|GDK_KEY_quotedbl|GDK_KEY_apostrophe|
++-+-+-+-+                +-+-+-+-+              +-+-+-+-+
+|4|5|6|D|                |Q|W|E|R|              |A|Z|E|R|
++-+-+-+-+       =>       +-+-+-+-+              +-+-+-+-+
+|7|8|9|E|                |A|S|D|F|              |Q|S|D|F|
++-+-+-+-+                +-+-+-+-+              +-+-+-+-+
+|A|0|B|F|                |Z|X|C|V|              |W|X|C|V|
++-+-+-+-+                +-+-+-+-+              +-+-+-+-+
+*/
 
 void printScreenConsole()
 {
@@ -354,9 +411,16 @@ void decodeNextInstruction()
 
     case 0xE000:
         switch(instruction & 0x00FF){
+            case 0x009E:
+                if(((keyPressed >> registers[x]) & 0x01) == 1){
+                    PC+=2;
+                }
+            break;
+
             case 0x00A1:
-                PC+=2;
-                printf("Instruction to implement: 0x%.4x\n", instruction);
+                if(((keyPressed >> registers[x]) & 0x01) == 0){
+                    PC+=2;
+                }
             break;
 
             default:
@@ -372,6 +436,20 @@ void decodeNextInstruction()
 
             case 0x0007:
                 registers[x] = delayTimer;
+                break;
+
+            case 0x000A:
+                if(keyPressed != 0){
+                    int i = 0;
+                    while(((keyPressed >> i) & 0x01) == 0){
+                        i++;
+                    }
+                    registers[x] = keyMappingAzertyMac[i];
+                }
+                else
+                {
+                    PC -= 2;
+                }
                 break;
 
             case 0x0015:
@@ -437,11 +515,15 @@ static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr, gpointer user_data
   return FALSE;
 }
 
-// timer callback for refreshing the display, 60Hz
+// timer callback for refreshing the display at 60Hz
+// CHIP-8 CPU should run at about 500Hz, hence 9 instructions are executed for every display refresh (9 * 60 = 540)
 gint timeout_callback (gpointer data){
-    /*for(int i = 0; i < 9; i++){
+    if(delayTimer !=0){
+        delayTimer--;
+    }
+    for(int i = 0; i < 9; i++){
         decodeNextInstruction();
-    }*/
+    }
     gtk_widget_queue_draw(darea);
     return TRUE;
 }
@@ -449,10 +531,37 @@ gint timeout_callback (gpointer data){
 gboolean key_press_event(GtkWidget *widget, GdkEventKey *event, gpointer data){
     if (event->keyval == GDK_KEY_space){
         printf("SPACE KEY PRESSED!\n");
+        // pause the emulator
+
         return TRUE;
+    }
+    for(int i=0; i < NUMBER_KEYS; i++){
+        if(event->keyval == keyMappingAzertyMac[i]){
+            keyPressed |= (1 << i);
+            printf("KEY %.2x PRESSED!\n", event->keyval);
+            return TRUE;
+        }
     }
     return FALSE;
 }
+
+gboolean key_release_event(GtkWidget *widget, GdkEventKey *event, gpointer data){
+    if (event->keyval == GDK_KEY_space){
+        printf("SPACE KEY RELEASED!\n");
+        // pause the emulator
+ 
+        return TRUE;
+    }
+    for(int i=0; i < NUMBER_KEYS; i++){
+        if(event->keyval == keyMappingAzertyMac[i]){
+            keyPressed &= ~(1 << i);
+            printf("KEY %.2x RELEASED!\n", event->keyval);
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
 
 gboolean resize_event(GtkWidget *widget, cairo_t *cr, gpointer user_data){
     gtk_window_get_size(GTK_WINDOW(window), &windowWidth, &windowHeight);
@@ -485,8 +594,7 @@ int main(int argc, char** argv)
     hints.min_aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
     hints.max_aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
     
-    gtk_window_set_geometry_hints (GTK_WINDOW(window), NULL, &hints, GDK_HINT_BASE_SIZE | GDK_HINT_RESIZE_INC | GDK_HINT_ASPECT);
-
+  
     darea = gtk_drawing_area_new();
     gtk_container_add(GTK_CONTAINER(window), darea);
 
@@ -495,31 +603,25 @@ int main(int argc, char** argv)
 
     gtk_widget_show_all(window);
 
+    gtk_window_set_geometry_hints (GTK_WINDOW(window), NULL, &hints, GDK_HINT_BASE_SIZE | GDK_HINT_RESIZE_INC | GDK_HINT_ASPECT);
+
     // activate keyboard event
-    gtk_widget_add_events(window, GDK_KEY_PRESS_MASK);
+    gtk_widget_add_events(window, GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK);
     g_signal_connect(G_OBJECT(window), "key_press_event", G_CALLBACK (key_press_event), NULL);
+    g_signal_connect(G_OBJECT(window), "key_release_event", G_CALLBACK (key_release_event), NULL);
     g_signal_connect(G_OBJECT(window), "configure-event", G_CALLBACK(resize_event), NULL);
 
     g_timeout_add (1000 / FPS, timeout_callback, NULL);
 
-    for(int i = 0; i < 218; i++){
+    /*for(int i = 0; i < 308; i++){
         decodeNextInstruction();
-    }
+    }*/
 
     gtk_main();
-
-    printf("Test!\n");
-    for(int i = 0; i < 218; i++){
-        decodeNextInstruction();
-    }
 
     /*while(!stop){
         decodeNextInstruction();
     }*/
-
-    //printScreenConsole();
-
-    //printRAM(START_OF_PROGRAM, numberBytes);
 
     return 0;
 }
