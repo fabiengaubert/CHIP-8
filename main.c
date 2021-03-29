@@ -13,8 +13,6 @@
 
 #define FONTS_SIZE 80
 
-#define SQUARE_SIZE 20
-
 #define FPS 60
 
 
@@ -81,6 +79,9 @@ uint8_t stop = 0;
 
 GtkWidget* window;
 GtkWidget *darea;
+
+int windowWidth, windowHeight;
+int squareSize = 20;
 
 void printScreenConsole()
 {
@@ -369,6 +370,14 @@ void decodeNextInstruction()
                 stop = 1;
                 break;
 
+            case 0x0007:
+                registers[x] = delayTimer;
+                break;
+
+            case 0x0015:
+                delayTimer = registers[x];
+                break;
+            
             case 0x001E:
                 I = I + registers[x];
                 break;
@@ -406,9 +415,6 @@ void decodeNextInstruction()
 }
 
 static void draw(cairo_t *cr){
-    int width, height;
-    //static size for now
-    //gtk_window_get_size(GTK_WINDOW(window), &width, &height);
     cairo_set_source_rgb(cr, 0.5, 0.5, 1);
 
     for (int i = 0; i < SCREEN_HEIGHT; i++)
@@ -417,11 +423,13 @@ static void draw(cairo_t *cr){
         {
             if (screen[i][j] == 1)
             {
-                cairo_rectangle (cr, j * SQUARE_SIZE, i * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
+                cairo_rectangle (cr, j * squareSize, i * squareSize, squareSize, squareSize);
+                gtk_window_get_size(GTK_WINDOW(window), &windowWidth, &windowHeight);
             }
         }
     }
     cairo_fill(cr);
+    printf("TestDraw\n");
 }
 
 static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr, gpointer user_data)
@@ -431,10 +439,27 @@ static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr, gpointer user_data
 }
 
 gint timeout_callback (gpointer data){
-    for(int i = 0; i < 9; i++){
+    /*for(int i = 0; i < 9; i++){
         decodeNextInstruction();
-    }
+    }*/
     gtk_widget_queue_draw(darea);
+    return TRUE;
+}
+
+gboolean key_press_event(GtkWidget *widget, GdkEventKey *event, gpointer data){
+    if (event->keyval == GDK_KEY_space){
+        printf("SPACE KEY PRESSED!\n");
+        return TRUE;
+    }
+    return FALSE;
+}
+
+gboolean resize_event(GtkWidget *widget, cairo_t *cr, gpointer user_data){
+    gtk_window_get_size(GTK_WINDOW(window), &windowWidth, &windowHeight);
+    squareSize = windowWidth / 64;
+    //draw(cr);
+    gtk_widget_queue_draw(darea);
+    printf("Redraw!\n");
     return TRUE;
 }
 
@@ -450,7 +475,7 @@ int main(int argc, char** argv)
 
     gtk_window_set_title(GTK_WINDOW(window), "Chipster2D");
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-    gtk_window_set_default_size(GTK_WINDOW(window), SCREEN_WIDTH * SQUARE_SIZE, SCREEN_HEIGHT * SQUARE_SIZE); 
+    gtk_window_set_default_size(GTK_WINDOW(window), SCREEN_WIDTH * squareSize, SCREEN_HEIGHT * squareSize); 
 
     darea = gtk_drawing_area_new();
     gtk_container_add(GTK_CONTAINER(window), darea);
@@ -460,17 +485,30 @@ int main(int argc, char** argv)
 
     gtk_widget_show_all(window);
 
+    // activate keyboard event
+    gtk_widget_add_events(window, GDK_KEY_PRESS_MASK);
+    g_signal_connect(G_OBJECT(window), "key_press_event", G_CALLBACK (key_press_event), NULL);
+
+    g_signal_connect(G_OBJECT(window), "configure-event", G_CALLBACK(resize_event), NULL);
+
     g_timeout_add (1000 / FPS, timeout_callback, NULL);
+
+    for(int i = 0; i < 218; i++){
+        decodeNextInstruction();
+    }
+
     gtk_main();
 
     printf("Test!\n");
-    for(int i = 0; i < 205; i++){
+    for(int i = 0; i < 218; i++){
         decodeNextInstruction();
     }
 
     /*while(!stop){
         decodeNextInstruction();
     }*/
+
+    
 
 
     //printScreenConsole();
