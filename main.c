@@ -13,7 +13,9 @@
 
 #define FONTS_SIZE 80
 
-#define SQUARE_SIZE 18
+#define SQUARE_SIZE 20
+
+#define FPS 60
 
 
 //const char *path = "seven.ch8";
@@ -80,7 +82,7 @@ uint8_t stop = 0;
 GtkWidget* window;
 GtkWidget *darea;
 
-void printScreen()
+void printScreenConsole()
 {
     printf("\n");
     for (int i = 0; i < SCREEN_HEIGHT; i++)
@@ -408,7 +410,17 @@ static void draw(cairo_t *cr){
     //static size for now
     //gtk_window_get_size(GTK_WINDOW(window), &width, &height);
     cairo_set_source_rgb(cr, 0.5, 0.5, 1);
-    cairo_rectangle (cr, 0, 0,SQUARE_SIZE,SQUARE_SIZE);
+
+    for (int i = 0; i < SCREEN_HEIGHT; i++)
+    {
+        for (int j = 0; j < SCREEN_WIDTH; j++)
+        {
+            if (screen[i][j] == 1)
+            {
+                cairo_rectangle (cr, j * SQUARE_SIZE, i * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
+            }
+        }
+    }
     cairo_fill(cr);
 }
 
@@ -416,6 +428,14 @@ static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr, gpointer user_data
 {
   draw(cr);
   return FALSE;
+}
+
+gint timeout_callback (gpointer data){
+    for(int i = 0; i < 9; i++){
+        decodeNextInstruction();
+    }
+    gtk_widget_queue_draw(darea);
+    return TRUE;
 }
 
 // $  gcc `pkg-config --cflags gtk+-3.0` -o main main.c `pkg-config --libs gtk+-3.0`
@@ -439,22 +459,23 @@ int main(int argc, char** argv)
     g_signal_connect(G_OBJECT(darea), "draw", G_CALLBACK(on_draw_event), NULL);
 
     gtk_widget_show_all(window);
+
+    g_timeout_add (1000 / FPS, timeout_callback, NULL);
     gtk_main();
+
+    printf("Test!\n");
+    for(int i = 0; i < 205; i++){
+        decodeNextInstruction();
+    }
 
     /*while(!stop){
         decodeNextInstruction();
     }*/
 
-    for(int i = 0; i < 205; i++){
-        decodeNextInstruction();
-    }
-    
-  
 
-    printScreen();
+    //printScreenConsole();
 
     //printRAM(START_OF_PROGRAM, numberBytes);
 
     return 0;
 }
-
