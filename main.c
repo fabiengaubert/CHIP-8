@@ -429,7 +429,6 @@ static void draw(cairo_t *cr){
         }
     }
     cairo_fill(cr);
-    printf("TestDraw\n");
 }
 
 static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr, gpointer user_data)
@@ -438,6 +437,7 @@ static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr, gpointer user_data
   return FALSE;
 }
 
+// timer callback for refreshing the display, 60Hz
 gint timeout_callback (gpointer data){
     /*for(int i = 0; i < 9; i++){
         decodeNextInstruction();
@@ -457,9 +457,7 @@ gboolean key_press_event(GtkWidget *widget, GdkEventKey *event, gpointer data){
 gboolean resize_event(GtkWidget *widget, cairo_t *cr, gpointer user_data){
     gtk_window_get_size(GTK_WINDOW(window), &windowWidth, &windowHeight);
     squareSize = windowWidth / 64;
-    //draw(cr);
     gtk_widget_queue_draw(darea);
-    printf("Redraw!\n");
     return TRUE;
 }
 
@@ -475,7 +473,19 @@ int main(int argc, char** argv)
 
     gtk_window_set_title(GTK_WINDOW(window), "Chipster2D");
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-    gtk_window_set_default_size(GTK_WINDOW(window), SCREEN_WIDTH * squareSize, SCREEN_HEIGHT * squareSize); 
+    gtk_window_set_default_size(GTK_WINDOW(window), SCREEN_WIDTH * squareSize, SCREEN_HEIGHT * squareSize);
+    
+    GdkGeometry hints;
+    
+    // inc doesn't work for now
+    hints.base_width = SCREEN_WIDTH * squareSize;
+    hints.base_height = SCREEN_HEIGHT * squareSize;
+    hints.width_inc = SCREEN_WIDTH;
+    hints.height_inc = SCREEN_HEIGHT;
+    hints.min_aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
+    hints.max_aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
+    
+    gtk_window_set_geometry_hints (GTK_WINDOW(window), NULL, &hints, GDK_HINT_BASE_SIZE | GDK_HINT_RESIZE_INC | GDK_HINT_ASPECT);
 
     darea = gtk_drawing_area_new();
     gtk_container_add(GTK_CONTAINER(window), darea);
@@ -488,7 +498,6 @@ int main(int argc, char** argv)
     // activate keyboard event
     gtk_widget_add_events(window, GDK_KEY_PRESS_MASK);
     g_signal_connect(G_OBJECT(window), "key_press_event", G_CALLBACK (key_press_event), NULL);
-
     g_signal_connect(G_OBJECT(window), "configure-event", G_CALLBACK(resize_event), NULL);
 
     g_timeout_add (1000 / FPS, timeout_callback, NULL);
@@ -507,9 +516,6 @@ int main(int argc, char** argv)
     /*while(!stop){
         decodeNextInstruction();
     }*/
-
-    
-
 
     //printScreenConsole();
 
