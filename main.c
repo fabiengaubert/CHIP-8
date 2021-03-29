@@ -17,13 +17,6 @@
 
 #define FPS 60
 
-
-//const char *path = "seven.ch8";
-//const char *path = "test_opcode.ch8";
-//const char *path = "BCD_display.txt";
-//const char *path = "spaceInvaders.ch8";
-const char *path = "c8games/INVADERS";
-
 uint8_t memory[MEMORY_SIZE];
 
 enum RegistersNames
@@ -198,12 +191,11 @@ int loadFile(const char *path)
 
 void init()
 {
-    //init registers to 0
     for (int i = 0; i < REGISTER_COUNT; i++)
     {
         registers[i] = 0;
     }
-    //init RAM to 0 for test
+
     for (int i = 0; i < MEMORY_SIZE; i++)
     {
         memory[i] = 0x00;
@@ -446,8 +438,7 @@ void decodeNextInstruction()
                     }
                     registers[x] = keyMappingAzertyMac[i];
                 }
-                else
-                {
+                else{
                     PC -= 2;
                 }
                 break;
@@ -509,8 +500,7 @@ static void draw(cairo_t *cr){
     cairo_fill(cr);
 }
 
-static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr, gpointer user_data)
-{
+static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr, gpointer user_data){
   draw(cr);
   return FALSE;
 }
@@ -562,7 +552,6 @@ gboolean key_release_event(GtkWidget *widget, GdkEventKey *event, gpointer data)
     return FALSE;
 }
 
-
 gboolean resize_event(GtkWidget *widget, cairo_t *cr, gpointer user_data){
     gtk_window_get_size(GTK_WINDOW(window), &windowWidth, &windowHeight);
     squareSize = windowWidth / 64;
@@ -573,8 +562,17 @@ gboolean resize_event(GtkWidget *widget, cairo_t *cr, gpointer user_data){
 // $  gcc `pkg-config --cflags gtk+-3.0` -o main main.c `pkg-config --libs gtk+-3.0`
 int main(int argc, char** argv)
 {
+    if(argc == 1){
+        printf("Specify a path for the ROM!\n");
+        return 1;
+    }
+
     init();
-    int numberBytes = loadFile(path);
+    int numberBytes = loadFile(argv[1]);
+    if(numberBytes == 0){
+        printf("Can't load %s!\n", argv[1]);
+        return 1;
+    }
     loadFonts();
 
     gtk_init(&argc, &argv);
@@ -593,7 +591,6 @@ int main(int argc, char** argv)
     hints.height_inc = SCREEN_HEIGHT;
     hints.min_aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
     hints.max_aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
-    
   
     darea = gtk_drawing_area_new();
     gtk_container_add(GTK_CONTAINER(window), darea);
@@ -605,7 +602,6 @@ int main(int argc, char** argv)
 
     gtk_window_set_geometry_hints (GTK_WINDOW(window), NULL, &hints, GDK_HINT_BASE_SIZE | GDK_HINT_RESIZE_INC | GDK_HINT_ASPECT);
 
-    // activate keyboard event
     gtk_widget_add_events(window, GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK);
     g_signal_connect(G_OBJECT(window), "key_press_event", G_CALLBACK (key_press_event), NULL);
     g_signal_connect(G_OBJECT(window), "key_release_event", G_CALLBACK (key_release_event), NULL);
@@ -613,15 +609,7 @@ int main(int argc, char** argv)
 
     g_timeout_add (1000 / FPS, timeout_callback, NULL);
 
-    /*for(int i = 0; i < 308; i++){
-        decodeNextInstruction();
-    }*/
-
     gtk_main();
-
-    /*while(!stop){
-        decodeNextInstruction();
-    }*/
 
     return 0;
 }
