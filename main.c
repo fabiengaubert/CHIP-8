@@ -17,10 +17,11 @@
 
 #define FPS 60
 
+#define SQUARE_SIZE_INITIAL 20
+
 uint8_t memory[MEMORY_SIZE];
 
-enum RegistersNames
-{
+enum RegistersNames {
     V0 = 0,
     V1,
     V2,
@@ -40,8 +41,7 @@ enum RegistersNames
     REGISTER_COUNT
 };
 
-uint8_t fonts[FONTS_SIZE] =
-    {
+uint8_t fonts[FONTS_SIZE] = {
         0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
         0x20, 0x60, 0x20, 0x20, 0x70, // 1
         0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
@@ -71,18 +71,17 @@ uint8_t screen[SCREEN_HEIGHT][SCREEN_WIDTH];
 uint16_t stack[32];
 uint8_t SP = 0;
 
-uint8_t stop = 0;
+uint8_t isPaused = 0;
 
 GtkWidget* window;
-GtkWidget *darea;
+GtkWidget* darea;
 
 int windowWidth, windowHeight;
-int squareSize = 20;
+int squareSize = SQUARE_SIZE_INITIAL;
 
 uint16_t keyPressed = 0;
 
-uint8_t keyMappingQwerty[NUMBER_KEYS] =
-{
+uint8_t keyMappingQwerty[NUMBER_KEYS] = {
     GDK_KEY_x,
     GDK_KEY_1,
     GDK_KEY_2,
@@ -101,8 +100,7 @@ uint8_t keyMappingQwerty[NUMBER_KEYS] =
     GDK_KEY_v
 };
 
-int keyMappingAzertyMac[NUMBER_KEYS] =
-{
+int keyMappingAzertyMac[NUMBER_KEYS] = {
     GDK_KEY_x,
     GDK_KEY_ampersand,
     GDK_KEY_eacute,
@@ -133,19 +131,14 @@ Keypad                   Qwerty                 Azerty
 +-+-+-+-+                +-+-+-+-+              +-+-+-+-+
 */
 
-void printScreenConsole()
-{
+void printScreenConsole() {
     printf("\n");
-    for (int i = 0; i < SCREEN_HEIGHT; i++)
-    {
-        for (int j = 0; j < SCREEN_WIDTH; j++)
-        {
-            if (screen[i][j] == 0)
-            {
+    for (int i = 0; i < SCREEN_HEIGHT; i++) {
+        for (int j = 0; j < SCREEN_WIDTH; j++) {
+            if (screen[i][j] == 0) {
                 printf("x");
             }
-            else
-            {
+            else {
                 printf(".");
             }
             printf(" ");
@@ -156,30 +149,23 @@ void printScreenConsole()
     printf("\n");
 }
 
-void clearScreen()
-{
-    for (int i = 0; i < SCREEN_HEIGHT; i++)
-    {
-        for (int j = 0; j < SCREEN_WIDTH; j++)
-        {
+void clearScreen() {
+    for (int i = 0; i < SCREEN_HEIGHT; i++) {
+        for (int j = 0; j < SCREEN_WIDTH; j++) {
             screen[i][j] = 0;
         }
     }
 }
 
-void printRAM(uint16_t adressStart, int number)
-{
-    for (int i = 0; i < number && (adressStart + i) < MEMORY_SIZE; i++)
-    {
+void printRAM(uint16_t adressStart, int number) {
+    for (int i = 0; i < number && (adressStart + i) < MEMORY_SIZE; i++) {
         printf("%.2x\n", memory[adressStart + i]);
     }
 }
 
-int loadFile(const char *path)
-{
+int loadFile(const char *path) {
     FILE *fp = fopen(path, "rb");
-    if (fp == NULL)
-    {
+    if (fp == NULL) {
         printf("erreur\n");
         return 0;
     }
@@ -189,29 +175,23 @@ int loadFile(const char *path)
     return numberBytesRead;
 }
 
-void init()
-{
-    for (int i = 0; i < REGISTER_COUNT; i++)
-    {
+void init() {
+    for (int i = 0; i < REGISTER_COUNT; i++) {
         registers[i] = 0;
     }
 
-    for (int i = 0; i < MEMORY_SIZE; i++)
-    {
+    for (int i = 0; i < MEMORY_SIZE; i++) {
         memory[i] = 0x00;
     }
 }
 
-void loadFonts()
-{
-    for (int i = 0; i < FONTS_SIZE; i++)
-    {
+void loadFonts() {
+    for (int i = 0; i < FONTS_SIZE; i++) {
         memory[START_OF_FONT + i] = fonts[i];
     }
 }
 
-void decodeNextInstruction()
-{
+void decodeNextInstruction() {
     uint16_t instruction = ((memory[PC] << 8) | memory[PC + 1]);
     printf("Instruction: %.4x\n", instruction);
     uint8_t x = (instruction >> 8) & 0x000F;
@@ -219,11 +199,9 @@ void decodeNextInstruction()
 
     PC += 2;
 
-    switch (instruction & 0xF000)
-    {
+    switch (instruction & 0xF000) {
     case 0x0000:
-        switch (instruction)
-        {
+        switch (instruction) {
         case 0x00E0:
             clearScreen();
             break;
@@ -251,22 +229,19 @@ void decodeNextInstruction()
         break;
 
     case 0x3000:
-        if (registers[x] == (instruction & 0x00FF))
-        {
+        if (registers[x] == (instruction & 0x00FF)) {
             PC += 2;
         }
         break;
 
     case 0x4000:
-        if (registers[x] != (instruction & 0x00FF))
-        {
+        if (registers[x] != (instruction & 0x00FF)) {
             PC += 2;
         }
         break;
 
     case 0x5000:
-        if (registers[x] == registers[y])
-        {
+        if (registers[x] == registers[y]) {
             PC += 2;
         }
         break;
@@ -281,8 +256,7 @@ void decodeNextInstruction()
         break;
 
     case 0x8000:
-        switch (instruction & 0x000F)
-        {
+        switch (instruction & 0x000F) {
         case 0x0000:
             registers[x] = registers[y];
             break;
@@ -301,24 +275,20 @@ void decodeNextInstruction()
 
         case 0x0004:
             registers[x] = registers[x] + registers[y];
-            if (registers[x] + registers[y] > 255)
-            {
+            if (registers[x] + registers[y] > 255) {
                 registers[VF] = 1;
             }
-            else
-            {
+            else {
                 registers[VF] = 0;
             }
             break;
 
         case 0x0005:
             registers[x] = registers[x] - registers[y];
-            if (registers[x] > registers[y])
-            {
+            if (registers[x] > registers[y]) {
                 registers[VF] = 1;
             }
-            else
-            {
+            else {
                 registers[VF] = 0;
             }
             break;
@@ -330,12 +300,10 @@ void decodeNextInstruction()
 
         case 0x0007:
             registers[x] = registers[y] - registers[x];
-            if (registers[y] > registers[x])
-            {
+            if (registers[y] > registers[x]) {
                 registers[VF] = 1;
             }
-            else
-            {
+            else {
                 registers[VF] = 0;
             }
             break;
@@ -351,11 +319,9 @@ void decodeNextInstruction()
         break;
 
     case 0x9000:
-        switch (instruction & 0x0001)
-        {
+        switch (instruction & 0x0001) {
         case 0x0000:
-            if (registers[y] != registers[x])
-            {
+            if (registers[y] != registers[x]) {
                 PC += 2;
             }
             break;
@@ -384,14 +350,10 @@ void decodeNextInstruction()
         registers[VF] = 0;
         int numberBytes = instruction & 0x000F;
         printf("Coordinates for printing, x = %d, y = %d \n", registers[x], registers[y]);
-        for (int i = 0; i < numberBytes; i++)
-        {
-            for (int j = 0; j < 8; j++)
-            {
-                if (memory[I + i] & (0x80 >> j))
-                {
-                    if (screen[(registers[y] + i) % SCREEN_HEIGHT][(registers[x] + j) % SCREEN_WIDTH] == 1)
-                    {
+        for (int i = 0; i < numberBytes; i++) {
+            for (int j = 0; j < 8; j++) {
+                if (memory[I + i] & (0x80 >> j)) {
+                    if (screen[(registers[y] + i) % SCREEN_HEIGHT][(registers[x] + j) % SCREEN_WIDTH] == 1) {
                         registers[VF] = 1;
                         printf("Collision\n");
                     }
@@ -423,7 +385,7 @@ void decodeNextInstruction()
     case 0xF000:
         switch(instruction & 0x00FF){
             case 0x0000:
-                stop = 1;
+                // game over
                 break;
 
             case 0x0007:
@@ -483,15 +445,12 @@ void decodeNextInstruction()
     }
 }
 
-static void draw(cairo_t *cr){
+static void draw(cairo_t *cr) {
     cairo_set_source_rgb(cr, 0.5, 0.5, 1);
 
-    for (int i = 0; i < SCREEN_HEIGHT; i++)
-    {
-        for (int j = 0; j < SCREEN_WIDTH; j++)
-        {
-            if (screen[i][j] == 1)
-            {
+    for (int i = 0; i < SCREEN_HEIGHT; i++) {
+        for (int j = 0; j < SCREEN_WIDTH; j++) {
+            if (screen[i][j] == 1) {
                 cairo_rectangle (cr, j * squareSize, i * squareSize, squareSize, squareSize);
                 gtk_window_get_size(GTK_WINDOW(window), &windowWidth, &windowHeight);
             }
@@ -500,33 +459,35 @@ static void draw(cairo_t *cr){
     cairo_fill(cr);
 }
 
-static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr, gpointer user_data){
+static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr, gpointer user_data) {
   draw(cr);
   return FALSE;
 }
 
 // timer callback for refreshing the display at 60Hz
 // CHIP-8 CPU should run at about 500Hz, hence 9 instructions are executed for every display refresh (9 * 60 = 540)
-gint timeout_callback (gpointer data){
-    if(delayTimer !=0){
+gint timeout_callback (gpointer data) {
+    if(delayTimer != 0) {
         delayTimer--;
     }
-    for(int i = 0; i < 9; i++){
-        decodeNextInstruction();
+    for(int i = 0; i < 9; i++) {
+        if(!isPaused) {
+            decodeNextInstruction();
+        }
     }
     gtk_widget_queue_draw(darea);
     return TRUE;
 }
 
-gboolean key_press_event(GtkWidget *widget, GdkEventKey *event, gpointer data){
-    if (event->keyval == GDK_KEY_space){
+gboolean key_press_event(GtkWidget *widget, GdkEventKey *event, gpointer data) {
+    if (event->keyval == GDK_KEY_space) {
         printf("SPACE KEY PRESSED!\n");
-        // pause the emulator
+        isPaused = !isPaused;
 
         return TRUE;
     }
-    for(int i=0; i < NUMBER_KEYS; i++){
-        if(event->keyval == keyMappingAzertyMac[i]){
+    for(int i=0; i < NUMBER_KEYS; i++) {
+        if(event->keyval == keyMappingAzertyMac[i]) {
             keyPressed |= (1 << i);
             printf("KEY %.2x PRESSED!\n", event->keyval);
             return TRUE;
@@ -535,15 +496,14 @@ gboolean key_press_event(GtkWidget *widget, GdkEventKey *event, gpointer data){
     return FALSE;
 }
 
-gboolean key_release_event(GtkWidget *widget, GdkEventKey *event, gpointer data){
-    if (event->keyval == GDK_KEY_space){
+gboolean key_release_event(GtkWidget *widget, GdkEventKey *event, gpointer data) {
+    if (event->keyval == GDK_KEY_space) {
         printf("SPACE KEY RELEASED!\n");
-        // pause the emulator
  
         return TRUE;
     }
-    for(int i=0; i < NUMBER_KEYS; i++){
-        if(event->keyval == keyMappingAzertyMac[i]){
+    for(int i=0; i < NUMBER_KEYS; i++) {
+        if(event->keyval == keyMappingAzertyMac[i]) {
             keyPressed &= ~(1 << i);
             printf("KEY %.2x RELEASED!\n", event->keyval);
             return TRUE;
@@ -560,9 +520,8 @@ gboolean resize_event(GtkWidget *widget, cairo_t *cr, gpointer user_data){
 }
 
 // $  gcc `pkg-config --cflags gtk+-3.0` -o main main.c `pkg-config --libs gtk+-3.0`
-int main(int argc, char** argv)
-{
-    if(argc == 1){
+int main(int argc, char** argv) {
+    if(argc == 1) {
         printf("Specify a path for the ROM!\n");
         return 1;
     }
@@ -607,7 +566,7 @@ int main(int argc, char** argv)
     g_signal_connect(G_OBJECT(window), "key_release_event", G_CALLBACK (key_release_event), NULL);
     g_signal_connect(G_OBJECT(window), "configure-event", G_CALLBACK(resize_event), NULL);
 
-    g_timeout_add (1000 / FPS, timeout_callback, NULL);
+    g_timeout_add(1000 / FPS, timeout_callback, NULL);
 
     gtk_main();
 
