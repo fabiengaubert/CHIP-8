@@ -61,7 +61,7 @@ gint timeout_callback (gpointer data) {
     return TRUE;
 }
 
-void initGUI(struct Chip8* chip8) {
+void initDisplay(struct Chip8* chip8) {
     displayedChip8 = chip8;
 
     gtk_init(NULL, NULL);
@@ -93,6 +93,8 @@ void initGUI(struct Chip8* chip8) {
     gtk_widget_show_all(window);
 
     gtk_window_set_geometry_hints (GTK_WINDOW(window), NULL, &hints, GDK_HINT_BASE_SIZE | GDK_HINT_RESIZE_INC | GDK_HINT_ASPECT);
+}
 
+void startDisplay() {
     gtk_main();
 }

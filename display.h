@@ -7,7 +7,8 @@
 
 void printScreenConsole();
 
-void initGUI(struct Chip8* chip8);
+void initDisplay(struct Chip8* chip8);
+void startDisplay();
 
 struct Chip8* displayedChip8;
 

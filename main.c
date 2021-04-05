@@ -3,6 +3,7 @@
 
 #include "chip8.h"
 #include "display.h"
+#include "keyboard.h"
 
 // $  gcc `pkg-config --cflags gtk+-3.0` -o main main.c `pkg-config --libs gtk+-3.0`
 int main(int argc, char** argv) {
@@ -21,7 +22,10 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    initGUI(&chip8);
+    initDisplay(&chip8);
+    initKeyboard(&chip8);
+
+    startDisplay();
 
     return 0;
 }

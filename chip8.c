@@ -60,8 +60,6 @@ void initChip8(struct Chip8* chip8) {
     }
 
     loadFonts(chip8);
-
-    initKeyboard(chip8);
 }
 
 void printRAM(struct Chip8* chip8, uint16_t adressStart, int number) {

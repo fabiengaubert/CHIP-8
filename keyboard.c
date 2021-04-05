@@ -2,8 +2,6 @@
 #include "chip8.h"
 
 gboolean key_press_event(GtkWidget *widget, GdkEventKey *event, gpointer data) {
-    printf("pressed\n");
-    while(1){}
     if (event->keyval == GDK_KEY_space) {
         printf("SPACE KEY PRESSED!\n");
         displayedChip8 -> isPaused = !displayedChip8 -> isPaused;
