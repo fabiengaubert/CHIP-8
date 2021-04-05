@@ -1,5 +1,10 @@
 {
     "files.associations": {
-        "gtk.h": "c"
+        "gtk.h": "c",
+        "ios": "c",
+        "istream": "c",
+        "locale": "c",
+        "ostream": "c",
+        "keyboard.h": "c"
     }
 }
