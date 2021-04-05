@@ -1,27 +1,9 @@
 #include "chip8.h"
+#include "keyboard.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
-
-enum RegistersNames {
-    V0 = 0,
-    V1,
-    V2,
-    V3,
-    V4,
-    V5,
-    V6,
-    V7,
-    V8,
-    V9,
-    VA,
-    VB,
-    VC,
-    VD,
-    VE,
-    VF,
-    REGISTER_COUNT
-};
 
 static const uint8_t fonts[FONTS_SIZE] = {
         0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -41,6 +23,24 @@ static const uint8_t fonts[FONTS_SIZE] = {
         0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
         0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 };
+
+void loadFonts(struct Chip8* chip8) {
+    for (int i = 0; i < FONTS_SIZE; i++) {
+        chip8 -> memory[START_OF_FONT + i] = fonts[i];
+    }
+}
+
+int loadFile(const char *path, struct Chip8* chip8) {
+    FILE *fp = fopen(path, "rb");
+    if (fp == NULL) {
+        printf("erreur\n");
+        return 0;
+    }
+    size_t numberBytesRead = fread((uint8_t *)chip8 -> memory + START_OF_PROGRAM, sizeof(uint8_t), MEMORY_SIZE - START_OF_PROGRAM, fp);
+    printf("%zu bytes are loaded in memory\n", numberBytesRead);
+    fclose(fp);
+    return numberBytesRead;
+}
 
 void initChip8(struct Chip8* chip8) {
     chip8 -> PC = START_OF_PROGRAM;
@@ -64,31 +64,13 @@ void initChip8(struct Chip8* chip8) {
     initKeyboard(chip8);
 }
 
-void loadFonts(struct Chip8* chip8) {
-    for (int i = 0; i < FONTS_SIZE; i++) {
-        chip8 -> memory[START_OF_FONT + i] = fonts[i];
-    }
-}
-
-int loadFile(const char *path, struct Chip8* chip8) {
-    FILE *fp = fopen(path, "rb");
-    if (fp == NULL) {
-        printf("erreur\n");
-        return 0;
-    }
-    size_t numberBytesRead = fread((uint8_t *)chip8 -> memory + START_OF_PROGRAM, sizeof(uint8_t), MEMORY_SIZE - START_OF_PROGRAM, fp);
-    printf("%zu bytes are loaded in memory\n", numberBytesRead);
-    fclose(fp);
-    return numberBytesRead;
-}
-
 void printRAM(struct Chip8* chip8, uint16_t adressStart, int number) {
     for (int i = 0; i < number && (adressStart + i) < MEMORY_SIZE; i++) {
         printf("%.2x\n", chip8 -> memory[adressStart + i]);
     }
 }
 
-void clearScreen() {
+static void clearScreen(struct Chip8* chip8) {
     for (int i = 0; i < SCREEN_HEIGHT; i++) {
         for (int j = 0; j < SCREEN_WIDTH; j++) {
             chip8 ->  screen[i][j] = 0;
@@ -108,7 +90,7 @@ static void decodeNextInstruction(struct Chip8* chip8) {
     case 0x0000:
         switch (instruction) {
         case 0x00E0:
-            clearScreen();
+            clearScreen(chip8);
             break;
 
         case 0x00EE:
@@ -254,7 +236,7 @@ static void decodeNextInstruction(struct Chip8* chip8) {
     case 0xD000:
         chip8 -> registers[VF] = 0;
         int numberBytes = instruction & 0x000F;
-        printf("Coordinates for printing, x = %d, y = %d \n", registers[x], registers[y]);
+        printf("Coordinates for printing, x = %d, y = %d \n", chip8 -> registers[x], chip8 -> registers[y]);
         for (int i = 0; i < numberBytes; i++) {
             for (int j = 0; j < 8; j++) {
                 if (chip8 -> memory[chip8 -> I + i] & (0x80 >> j)) {
@@ -323,20 +305,20 @@ static void decodeNextInstruction(struct Chip8* chip8) {
                 break;
 
             case 0x0033:
-                chip8 -> memory[I] = chip8 -> registers[x] / 100;
-                chip8 -> memory[I+1] = (chip8 -> registers[x] % 100) / 10;
-                chip8 -> memory[I+2] = chip8 -> registers[x] % 10;
+                chip8 -> memory[chip8 -> I] = chip8 -> registers[x] / 100;
+                chip8 -> memory[chip8 -> I+1] = (chip8 -> registers[x] % 100) / 10;
+                chip8 -> memory[chip8 -> I+2] = chip8 -> registers[x] % 10;
                 break;
 
             case 0x0055:
                 for(int i=0; i<=x; i++){
-                    chip8 -> memory[I+i] = chip8 -> registers[i];
+                    chip8 -> memory[chip8 -> I+i] = chip8 -> registers[i];
                 }
                 break;
             
             case 0x0065:
                 for(int i=0; i<=x; i++){
-                    chip8 -> registers[i] = chip8 -> memory[I+i];
+                    chip8 -> registers[i] = chip8 -> memory[chip8 -> I+i];
                 }
                 break;
 
@@ -352,7 +334,7 @@ static void decodeNextInstruction(struct Chip8* chip8) {
 
 void timeout_callback_display(struct Chip8* chip8) {
     if(chip8 -> delayTimer != 0) {
-        delayTimer--;
+        chip8 -> delayTimer--;
     }
     
     // CHIP-8 CPU should run at about 500Hz, hence 9 instructions are executed for every display refresh (9 * 60 = 540)

@@ -9,12 +9,30 @@
 
 #define FONTS_SIZE 80
 
-#define REGISTER_COUNT 16
-
 #define SCREEN_WIDTH 64
 #define SCREEN_HEIGHT 32
 
 #define SQUARE_SIZE_INITIAL 20
+
+enum RegistersNames {
+    V0 = 0,
+    V1,
+    V2,
+    V3,
+    V4,
+    V5,
+    V6,
+    V7,
+    V8,
+    V9,
+    VA,
+    VB,
+    VC,
+    VD,
+    VE,
+    VF,
+    REGISTER_COUNT
+};
 
 struct Chip8{
     uint8_t memory[MEMORY_SIZE];

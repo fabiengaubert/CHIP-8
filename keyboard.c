@@ -2,6 +2,8 @@
 #include "chip8.h"
 
 gboolean key_press_event(GtkWidget *widget, GdkEventKey *event, gpointer data) {
+    printf("pressed\n");
+    while(1){}
     if (event->keyval == GDK_KEY_space) {
         printf("SPACE KEY PRESSED!\n");
         displayedChip8 -> isPaused = !displayedChip8 -> isPaused;
@@ -34,7 +36,8 @@ gboolean key_release_event(GtkWidget *widget, GdkEventKey *event, gpointer data)
     return FALSE;
 }
 
-void initKeyboard(GtkWidget *window, struct Chip8* chip8) {
+void initKeyboard(struct Chip8* chip8) {
+    keyPressed = 0;
     currentKeyMapping = keyMappingAzertyMac;
     displayedChip8 = chip8;
     gtk_widget_add_events(window, GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK);

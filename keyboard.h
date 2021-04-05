@@ -45,10 +45,12 @@ static const int keyMappingAzertyMac[NUMBER_KEYS] = {
     GDK_KEY_v
 };
 
-uint16_t keyPressed = 0;
+uint16_t keyPressed;
 struct Chip8* displayedChip8;
 const int* currentKeyMapping;
 
-void initKeyboard(GtkWidget *window, struct Chip8* chip8);
+extern GtkWidget* window;
+
+void initKeyboard(struct Chip8* chip8);
 
 #endif // KEYBOARD_H_

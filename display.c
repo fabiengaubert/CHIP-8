@@ -6,7 +6,7 @@
 static int windowWidth, windowHeight;
 static int squareSize = SQUARE_SIZE_INITIAL;
 
-static GtkWidget* window;
+GtkWidget* window;
 static GtkWidget* darea;
 
 void printScreenConsole() {
@@ -61,7 +61,7 @@ gint timeout_callback (gpointer data) {
     return TRUE;
 }
 
-void initGUI(const struct Chip8* chip8) {
+void initGUI(struct Chip8* chip8) {
     displayedChip8 = chip8;
 
     gtk_init(NULL, NULL);
