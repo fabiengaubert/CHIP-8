@@ -53,8 +53,29 @@ gboolean resize_event(GtkWidget *widget, cairo_t *cr, gpointer user_data){
     return TRUE;
 }
 
+
+void create_file_selection_window(){
+    GtkFileChooserNative *native;
+    GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
+    
+    gint res;
+    
+    native = gtk_file_chooser_native_new("Select CHIP-8 file", GTK_WINDOW(window), action, "_Open", "_Cancel");
+    res = gtk_native_dialog_run(GTK_NATIVE_DIALOG(native));
+
+    if(res == GTK_RESPONSE_ACCEPT) {
+        char *filename;
+        GtkFileChooser *chooser = GTK_FILE_CHOOSER(native);
+        filename = gtk_file_chooser_get_filename(chooser);
+        loadFile(filename, displayedChip8);
+        g_free(filename);
+    }
+    
+    g_object_unref(native);
+}
+
 // timer callback for refreshing the display at 60Hz
-gint timeout_callback (gpointer data) {
+gint timeout_callback(gpointer data) {
     timeout_callback_display(displayedChip8);
     
     gtk_widget_queue_draw(darea);
@@ -88,13 +109,12 @@ void initDisplay(struct Chip8* chip8) {
     g_signal_connect(G_OBJECT(darea), "draw", G_CALLBACK(on_draw_event), NULL);
     g_signal_connect(G_OBJECT(window), "configure-event", G_CALLBACK(resize_event), NULL);
 
-    g_timeout_add(1000 / FPS, timeout_callback, NULL);
-
     gtk_widget_show_all(window);
 
     gtk_window_set_geometry_hints (GTK_WINDOW(window), NULL, &hints, GDK_HINT_BASE_SIZE | GDK_HINT_RESIZE_INC | GDK_HINT_ASPECT);
 }
 
 void startDisplay() {
+    g_timeout_add_full(G_PRIORITY_HIGH, 1000 / FPS, timeout_callback, NULL, NULL);
     gtk_main();
 }

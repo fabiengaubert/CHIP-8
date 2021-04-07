@@ -33,13 +33,27 @@ void loadFonts(struct Chip8* chip8) {
 int loadFile(const char *path, struct Chip8* chip8) {
     FILE *fp = fopen(path, "rb");
     if (fp == NULL) {
-        printf("erreur\n");
+        printf("path is NULL\n");
         return 0;
     }
     size_t numberBytesRead = fread((uint8_t *)chip8 -> memory + START_OF_PROGRAM, sizeof(uint8_t), MEMORY_SIZE - START_OF_PROGRAM, fp);
     printf("%zu bytes are loaded in memory\n", numberBytesRead);
     fclose(fp);
     return numberBytesRead;
+}
+
+void printRAM(struct Chip8* chip8, uint16_t adressStart, int number) {
+    for (int i = 0; i < number && (adressStart + i) < MEMORY_SIZE; i++) {
+        printf("%.2x\n", chip8 -> memory[adressStart + i]);
+    }
+}
+
+static void clearScreen(struct Chip8* chip8) {
+    for (int i = 0; i < SCREEN_HEIGHT; i++) {
+        for (int j = 0; j < SCREEN_WIDTH; j++) {
+            chip8 ->  screen[i][j] = 0;
+        }
+    }
 }
 
 void initChip8(struct Chip8* chip8) {
@@ -60,20 +74,7 @@ void initChip8(struct Chip8* chip8) {
     }
 
     loadFonts(chip8);
-}
-
-void printRAM(struct Chip8* chip8, uint16_t adressStart, int number) {
-    for (int i = 0; i < number && (adressStart + i) < MEMORY_SIZE; i++) {
-        printf("%.2x\n", chip8 -> memory[adressStart + i]);
-    }
-}
-
-static void clearScreen(struct Chip8* chip8) {
-    for (int i = 0; i < SCREEN_HEIGHT; i++) {
-        for (int j = 0; j < SCREEN_WIDTH; j++) {
-            chip8 ->  screen[i][j] = 0;
-        }
-    }
+    clearScreen(chip8);
 }
 
 static void decodeNextInstruction(struct Chip8* chip8) {
@@ -95,11 +96,13 @@ static void decodeNextInstruction(struct Chip8* chip8) {
             chip8 -> PC = chip8 -> stack[--(chip8 -> SP)];
             if(chip8 -> SP<0){
                 printf("Erreur, SP is negatif\n");
+                while(1){};
             }
             break;
 
         default:
             printf("Instruction not handled: 0x%.4x\n", instruction);
+            while(1){};
         }
         break;
 
@@ -200,6 +203,7 @@ static void decodeNextInstruction(struct Chip8* chip8) {
 
         default:
             printf("0x8000 Instruction not handled: 0x%.4x\n", instruction);
+            while(1){};
         }
         break;
 
@@ -213,6 +217,7 @@ static void decodeNextInstruction(struct Chip8* chip8) {
 
         default:
             printf("0x9000 Instruction not handled: 0x%.4x\n", instruction);
+            while(1){};
         }
         break;
 
@@ -264,6 +269,7 @@ static void decodeNextInstruction(struct Chip8* chip8) {
 
             default:
             printf("0xE000 Instruction not handled: 0x%.4x\n", instruction);
+            while(1){};
         }
         break;
 
@@ -322,11 +328,13 @@ static void decodeNextInstruction(struct Chip8* chip8) {
 
             default:
             printf("0xF000 Instruction not handled: 0x%.4x\n", instruction);
+            while(1){};
         }
         break;
 
     default:
         printf("Instruction doesn't exist\n");
+        while(1){};
     }
 }
 

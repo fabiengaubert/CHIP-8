@@ -7,8 +7,10 @@
 
 void printScreenConsole();
 
+
 void initDisplay(struct Chip8* chip8);
 void startDisplay();
+void create_file_selection_window();
 
 struct Chip8* displayedChip8;
 
